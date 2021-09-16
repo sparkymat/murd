@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use simple_logger::SimpleLogger;
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
@@ -9,17 +8,7 @@ extern crate log;
 extern crate serde;
 extern crate simple_logger;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Config {
-    listen_host: String,
-    listen_port: u32,
-}
-
-impl Config {
-    fn listen_address(&self) -> String {
-        format!("{}:{}", self.listen_host, self.listen_port)
-    }
-}
+mod config;
 
 fn handle_client(mut stream: TcpStream) {
     let mut data = [0 as u8; 1024];
@@ -39,22 +28,14 @@ fn handle_client(mut stream: TcpStream) {
     } {}
 }
 
-fn load_config() -> Config {
-    let mut settings = config::Config::default();
-    settings.merge(config::File::with_name("config")).unwrap();
-
-    // Print out our settings (as a HashMap)
-    return settings.try_into::<Config>().unwrap();
-}
-
 fn main() {
     SimpleLogger::new().init().unwrap();
 
-    let config = load_config();
-    info!("config = {:#?}", config);
+    let cfg = config::load();
+    info!("config = {:#?}", cfg);
 
-    let listener = TcpListener::bind(config.listen_address()).unwrap();
-    info!("Listening on {}", config.listen_address());
+    let listener = TcpListener::bind(cfg.listen_address()).unwrap();
+    info!("Listening on {}", cfg.listen_address());
 
     for stream in listener.incoming() {
         match stream {
